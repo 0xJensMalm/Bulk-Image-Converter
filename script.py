@@ -14,6 +14,9 @@ def load_content_to_tree(folder_path, tree):
     for row in tree.get_children():
         tree.delete(row)
 
+    total_size = 0  # Initialize total size to zero
+    total_images = 0  # Initialize total image count to zero
+
     for filename in os.listdir(folder_path):
         # Assuming you're only working with image files for now
         if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):
@@ -27,8 +30,18 @@ def load_content_to_tree(folder_path, tree):
             file_type = img.format
             file_size = os.path.getsize(file_path)
             
+            # Add the file size to the total size and increase the image count
+            total_size += file_size
+            total_images += 1
+            
             # Insert these details into the tree
             tree.insert("", "end", values=(filename, file_type, dimensions, file_size))
+    
+    # Convert total size to kilobytes and display in the log
+    total_size_kb = total_size / 1024  # Convert bytes to kilobytes
+    append_to_log(f"Total images fetched: {total_images}")
+    append_to_log(f"Total size of loaded files: {total_size_kb:.2f} KB")
+
 
 def update_output_folder():
     global output_folder_path
@@ -46,10 +59,9 @@ def load_folder_content():
 def load_output_folder_content():
     folder_path = filedialog.askdirectory()
     if folder_path:
-        output_path_entry.delete(0, tk.END)
-        output_path_entry.insert(0, folder_path)
+        output_folder.delete(0, tk.END)
+        output_folder.insert(0, folder_path)
         load_content_to_tree(folder_path, tree_output)
-
 
 def select_output_folder():
     global output_folder_path
@@ -67,6 +79,13 @@ def on_resize_selected():
 def on_file_type_selected(event=None):
     global new_file_type
     new_file_type = dropdown_file_type.get()
+
+def append_to_log(log_msg):
+    log_display.configure(state='normal')  # Temporarily enable the widget to edit it
+    log_display.insert(tk.END, log_msg + '\n')  # Append the log message
+    log_display.see(tk.END)  # Scroll to the end
+    log_display.configure(state='disabled')  # Disable the widget again
+
 
 
 root = tk.Tk()
@@ -108,21 +127,6 @@ tree_original.heading("Type", text="Type")
 tree_original.heading("Dimensions", text="Dimensions")
 tree_original.heading("Size", text="Size")
 tree_original.pack(side=tk.TOP, pady=10)
-output_folder_label = tk.Label(root, text="Output Folder")
-output_folder_label.pack(pady=2)
-
-output_path_entry = tk.Entry(root, width=50)
-output_path_entry.pack(pady=5)
-
-btn_load_output_folder = tk.Button(root, text="Select Output Folder", command=load_output_folder_content)
-btn_load_output_folder.pack(pady=5)
-
-tree_output = ttk.Treeview(root, columns=("File", "Type", "Dimensions", "Size"), show="headings")
-tree_output.heading("File", text="File")
-tree_output.heading("Type", text="Type")
-tree_output.heading("Dimensions", text="Dimensions")
-tree_output.heading("Size", text="Size")
-tree_output.pack(side=tk.TOP, pady=10)
 
 
 # UI for dimensions and file type
@@ -149,7 +153,7 @@ label_filetype.pack(side=tk.LEFT, padx=5)
 file_types = ["JPG", "PNG", "GIF", "BMP"]
 dropdown_file_type = ttk.Combobox(controls_frame, values=file_types, width=5)
 dropdown_file_type.pack(side=tk.LEFT, padx=5)
-dropdown_file_type.bind("<<ComboboxSelected>>", on_file_type_selected)
+dropdown_file_type.bind("<<ComboboxSelected>>", on_file_type_selected)  
 
 btn_convert = tk.Button(controls_frame, text="Convert")
 btn_convert.pack(side=tk.LEFT, padx=5)  # Placed right next to the filetype selector
@@ -167,6 +171,23 @@ output_folder.pack(side=tk.LEFT, padx=5)
 btn_output_folder = tk.Button(output_frame, text="Select Output Folder", command=select_output_folder)
 btn_output_folder.pack(side=tk.LEFT, padx=5)
 
+
+tree_output = ttk.Treeview(root, columns=("File", "Type", "Dimensions", "Size"), show="headings")
+tree_output.heading("File", text="File")
+tree_output.heading("Type", text="Type")
+tree_output.heading("Dimensions", text="Dimensions")
+tree_output.heading("Size", text="Size")
+tree_output.pack(side=tk.TOP, pady=10)
+
+
 update_output_folder()
+
+# Log display
+log_label = tk.Label(root, text="Logs")
+log_label.pack(pady=2)
+
+log_display = tk.Text(root, height=5, width=60, bg='black', state='disabled')  # setting it to disabled to prevent manual edits
+log_display.pack(pady=10, padx=10)
+
 
 root.mainloop()
