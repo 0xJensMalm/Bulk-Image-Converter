@@ -9,7 +9,7 @@ new_file_type = None
 output_folder_path = None
 
 
-def load_content_to_tree(folder_path, tree):
+def load_content_to_tree(folder_path, tree, log_content=True):
     # Clear any existing items in the tree
     for row in tree.get_children():
         tree.delete(row)
@@ -39,8 +39,9 @@ def load_content_to_tree(folder_path, tree):
     
     # Convert total size to kilobytes and display in the log
     total_size_kb = total_size / 1024  # Convert bytes to kilobytes
-    append_to_log(f"Total images fetched: {total_images}")
-    append_to_log(f"Total size of loaded files: {total_size_kb:.2f} KB")
+    if log_content:
+        append_to_log(f"Total images fetched: {total_images}")
+        append_to_log(f"Total size of loaded files: {total_size_kb:.2f} KB")
 
 
 def update_output_folder():
@@ -79,6 +80,25 @@ def on_resize_selected():
 def on_file_type_selected(event=None):
     global new_file_type
     new_file_type = dropdown_file_type.get()
+
+
+def create_new_output_folder():
+    # Get the current directory from the original path entry
+    original_folder_path = path_entry.get()
+    new_output_folder_path = os.path.join(original_folder_path, "output")
+    
+    # Create the new folder if it doesn't exist
+    if not os.path.exists(new_output_folder_path):
+        os.mkdir(new_output_folder_path)
+    
+    # Set the new output folder path to the output entry and tree view
+    output_folder.delete(0, tk.END)
+    output_folder.insert(0, new_output_folder_path)
+    load_content_to_tree(new_output_folder_path, tree_output)
+
+    append_to_log(f"Added new folder {new_output_folder_path}")
+    load_content_to_tree(new_output_folder_path, tree_output, log_content=False)
+
 
 def append_to_log(log_msg):
     log_display.configure(state='normal')  # Temporarily enable the widget to edit it
@@ -170,6 +190,9 @@ output_folder.pack(side=tk.LEFT, padx=5)
 
 btn_output_folder = tk.Button(output_frame, text="Select Output Folder", command=select_output_folder)
 btn_output_folder.pack(side=tk.LEFT, padx=5)
+
+btn_new_output_folder = tk.Button(output_frame, text="New Output Folder", command=create_new_output_folder)
+btn_new_output_folder.pack(side=tk.LEFT, padx=5)
 
 
 tree_output = ttk.Treeview(root, columns=("File", "Type", "Dimensions", "Size"), show="headings")
